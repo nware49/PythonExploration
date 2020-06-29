@@ -18,6 +18,8 @@ except:
 print(ser1.name)
 print(ser2.name)
 
+breakIndicator = 0
+
 class Serial1Write(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
         super(Serial1Write,self).__init__()
@@ -27,6 +29,8 @@ class Serial1Write(threading.Thread):
         i = -1
         pi = math.pi
         while True:
+            if breakIndicator == 1:
+                break
             i += 1
             pi = math.pi
             curDT = datetime.now()
@@ -42,19 +46,22 @@ class Serial1Write(threading.Thread):
                 ser1.write(LongString.encode())
                 print (LongString)
                 time.sleep(1)
-            except KeyboardInterrupt:
+            except:
                 print("Cannot write to port.")
                 break
+        return
         
 class Serial2Write(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
         super(Serial2Write,self).__init__()
-
+        
     def run(self):
         a = -1.1
         i = -1
         pi = math.pi
         while True:
+            if breakIndicator == 1:
+                break
             i += 1
             a += 1.1
             aFormat = format(a, '.1f')
@@ -71,21 +78,23 @@ class Serial2Write(threading.Thread):
                 ser2.write(LongString.encode())
                 print (LongString)
                 time.sleep(1.1)
-            except KeyboardInterrupt:
+            except:
                 print("Cannot write to port.")
                 break
-try:
-    if __name__ == '__main__':
+        return
+if __name__ == '__main__':
         writer1 = Serial1Write()
         writer2 = Serial2Write()
-
+        
         writer1.start()
         writer2.start()
-            
+try:           
+    while True:
+        continue
 except KeyboardInterrupt:
-    __name__ = '__quit__'
     print("Keyboard Interrupt")
-    quit()
+    breakIndicator = 1
+    exit()
 except:
-    print("Cannot write to port.")
-    quit()
+    print("Could not spawn threads to begin writing to ports.")
+    exit()

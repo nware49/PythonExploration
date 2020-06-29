@@ -4,12 +4,13 @@ import logging
 import time
 import random
 import serial
+import csv
 
 PortChannel1 = "/dev/ttySC0"
 PortChannel2 = "/dev/ttySC1"
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='(%(threadName)-9s) %(message)s',)
+logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-9s) %(message)s',)
+
 try:
     Serial1 = serial.Serial(PortChannel1)
     Serial2 = serial.Serial(PortChannel2)
@@ -20,6 +21,7 @@ except:
 BUF_SIZE = 10
 q1 = queue.Queue(BUF_SIZE)
 q2 = queue.Queue(BUF_SIZE)
+breakIndicator = 0
 
 class ProducerThreadChannel1(threading.Thread):
     def __init__(self, group=None, target=None, name=None,
@@ -36,24 +38,10 @@ class ProducerThreadChannel1(threading.Thread):
                 DecodedBytes = DecodedBytes
                 #print(DecodedBytes)
                 IncrementNum,TimeVal,RandFloat,SineVal,CosineVal = DecodedBytes.split(",")
-                q1.put(IncrementNum)
-                data = IncrementNum
-
-        return
-
-class ConsumerThreadChannel1(threading.Thread):
-    def __init__(self, group=None, target=None, name=None,
-                 args=(), kwargs=None, verbose=None):
-        super(ConsumerThreadChannel1,self).__init__()
-        self.target = target
-        self.name = name
-        return
-
-    def run(self):
-        while True:
-            if not q1.empty():
-                data = q1.get()
-                print(data)
+                q1.put(SineVal)
+                data = SineVal
+                if breakIndicator == 1:
+                    break
         return
 
 class ProducerThreadChannel2(threading.Thread):
@@ -63,6 +51,7 @@ class ProducerThreadChannel2(threading.Thread):
         self.target = target
         self.name = name
 
+
     def run(self):
         while True:
             if not q2.full():
@@ -71,42 +60,44 @@ class ProducerThreadChannel2(threading.Thread):
                 DecodedBytes = DecodedBytes
                 #print(DecodedBytes)
                 IncrementNum,TimeVal,RandFloat,SineVal,CosineVal = DecodedBytes.split(",")
-                q2.put(IncrementNum)
-                data = IncrementNum
-        return
-
-class ConsumerThreadChannel2(threading.Thread):
-    def __init__(self, group=None, target=None, name=None,
-                 args=(), kwargs=None, verbose=None):
-        super(ConsumerThreadChannel2,self).__init__()
-        self.target = target
-        self.name = name
-        return
-
-    def run(self):
-        while True:
-            if not q2.empty():
-                data = q2.get()
-                print(data)
+                q2.put(CosineVal)
+                data = CosineVal
+                if breakIndicator == 1:
+                    break
         return
 
 try:
     if __name__ == '__main__':
         
         pc1 = ProducerThreadChannel1(name='producerChannel1')
-        cc1 = ConsumerThreadChannel1(name='consumerChannel1')
         pc2 = ProducerThreadChannel2(name='producerChannel2')
-        cc2 = ConsumerThreadChannel2(name='consumerChannel2')
 
         pc1.start()
         pc2.start()
-        time.sleep(2)
-        cc1.start()
-        cc2.start()
-        
-except KeyboardInterrupt:
-    print("Keyboard Interrupt")
-    exit()
+
 except:
-    print("An error occurred, data could not be recieved.")
+    print("An error occured, the threads could not be spawned.")
     exit()
+
+    
+while True:
+    try:
+        if q1.empty() and q2.empty():
+            continue
+        if not q1.empty() or not q2.empty():
+            data1 = q1.get()
+            data2 = q2.get()
+            print(data1)
+            print(data2)
+            with open("SineCosine.csv","a") as file:
+                #Opens this file^ Writes data here. 
+                writer = csv.writer(file, delimiter=",")
+                writer.writerow((data1,data2))
+    
+    except KeyboardInterrupt:
+        print("Keyboard Interrupt")
+        breakIndicator = 1
+        exit()
+    except:
+        print("An error occurred, data could not be recieved.")
+        exit()

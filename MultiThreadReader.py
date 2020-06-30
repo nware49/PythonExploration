@@ -32,13 +32,15 @@ class ProducerThreadChannel1(threading.Thread):
 
     def run(self):
         while True:
+            curDT = datetime.now()
+            Time = curDT.strftime("%H:%M:%S")
             if not q1.full():
                 ser_bytes = Serial1.readline()
                 DecodedBytes = ser_bytes[0:len(ser_bytes)-2].decode("utf-8")
-                DecodedBytes = DecodedBytes
+                StringValues = (DecodedBytes + "," + Time)
                 #print(DecodedBytes)
-                IncrementNum,TimeVal,RandFloat,SineVal,CosineVal = DecodedBytes.split(",")
-                q1.put(SineVal)
+                IncrementNum,TimeVal,RandFloat,SineVal,CosineVal,TimeStamp = StringValues.split(",")
+                q1.put(SineVal,TimeStamp)
                 data = SineVal
                 if breakIndicator == 1:
                     break
@@ -54,13 +56,15 @@ class ProducerThreadChannel2(threading.Thread):
 
     def run(self):
         while True:
+            curDT = datetime.now()
+            Time = curDT.strftime("%H:%M:%S")
             if not q2.full():
                 ser_bytes = Serial2.readline()
                 DecodedBytes = ser_bytes[0:len(ser_bytes)-2].decode("utf-8")
-                DecodedBytes = DecodedBytes
+                StringValues = (DecodedBytes + "," + Time)
                 #print(DecodedBytes)
-                IncrementNum,TimeVal,RandFloat,SineVal,CosineVal = DecodedBytes.split(",")
-                q2.put(CosineVal)
+                IncrementNum,TimeVal,RandFloat,SineVal,CosineVal,TimeStamp = StringValues.split(",")
+                q2.put(CosineVal,TimeStamp)
                 data = CosineVal
                 if breakIndicator == 1:
                     break
@@ -82,17 +86,22 @@ except:
     
 while True:
     try:
-        if q1.empty() and q2.empty():
-            continue
-        if not q1.empty() or not q2.empty():
+        #if q1.empty() and q2.empty():
+            #continue
+        if not q1.empty():
             data1 = q1.get()
-            data2 = q2.get()
             print(data1)
+            with open("SineCosine.csv","a") as file:
+                #Opens this file^ Writes data here. 
+                writer = csv.writer(file, delimiter=",")
+                writer.writerow(("Channel 1 Data",data1))
+        if not q2.empty():
+            data2 = q2.get()
             print(data2)
             with open("SineCosine.csv","a") as file:
                 #Opens this file^ Writes data here. 
                 writer = csv.writer(file, delimiter=",")
-                writer.writerow((data1,data2))
+                writer.writerow(("Channel 2 Data",data2))
     
     except KeyboardInterrupt:
         print("Keyboard Interrupt")

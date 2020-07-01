@@ -1,4 +1,5 @@
 import threading
+import collections
 import queue
 import logging
 import time
@@ -34,13 +35,11 @@ class ProducerThreadChannel1(threading.Thread):
 
     def run(self):
         while True:
-            curDT = datetime.now()
-            TimeLong = curDT.strftime("%H:%M:%S:%f")
-            Time = TimeLong[0:len(TimeLong)-3]
+            Time = time.time()
             if not q1.full():
                 ser_bytes = Serial1.readline()
                 DecodedBytes = ser_bytes[0:len(ser_bytes)-2].decode("utf-8")
-                StringValues = (DecodedBytes + "," + Time)
+                StringValues = (DecodedBytes + "," + str(Time))
                 IncrementNum,TimeVal,RandFloat,SineVal,CosineVal,TimeStamp = StringValues.split(",")
                 q1.put(TimeStamp + "," + SineVal)
                 if breakIndicator == 1:
@@ -56,13 +55,11 @@ class ProducerThreadChannel2(threading.Thread):
 
     def run(self):
         while True:
-            curDT = datetime.now()
-            TimeLong = curDT.strftime("%H:%M:%S:%f")
-            Time = TimeLong[0:len(TimeLong)-3]
+            Time = time.time()
             if not q2.full():
                 ser_bytes = Serial2.readline()
                 DecodedBytes = ser_bytes[0:len(ser_bytes)-2].decode("utf-8")
-                StringValues = (DecodedBytes + "," + Time)
+                StringValues = (DecodedBytes + "," + str(Time))
                 IncrementNum,TimeVal,RandFloat,SineVal,CosineVal,TimeStamp = StringValues.split(",")
                 q2.put(TimeStamp + "," + CosineVal)
                 if breakIndicator == 1:
@@ -82,41 +79,56 @@ except:
     print("An error occured, the threads could not be spawned.")
     exit()
 
-IntDataArr = [[0,0,0],[0,0,0]]
+IntDataArrTime = collections.deque()
+IntDataArrCosine = collections.deque()
+IntDataArrSineTime = collections.deque()
 
 while True:
     try:
-        if q1.empty() and q2.empty():
+        if q1.empty() or q2.empty():
             time.sleep(0.1)
             continue
-        if not q1.empty():
+        
+        if not q1.empty() and not q2.empty():
             Data1 = q1.get()
-            TimeStamp1,Sine = Data1.split(",")
-            with open("SineCosine.csv","a") as file:
-                #Opens this file^ Writes data here. 
-                writer = csv.writer(file, delimiter=",")
-                writer.writerow(("Channel 1 Data",TimeStamp1,Sine))
-        if not q2.empty():
+            TimeStampSine,Sine = Data1.split(",")
+            SineTime = time.ctime(float(TimeStampSine))
             Data2 = q2.get()
-            TimeStamp2,Cosine = Data2.split(",")
-            with open("SineCosine.csv","a") as file:
-                #Opens this file^ Writes data here. 
-                writer = csv.writer(file, delimiter=",")
-                writer.writerow(("Channel 2 Data",TimeStamp2,Cosine))
-                
-        IntDataArr[0][1] = TimeStamp2
-        IntDataArr[0][2] = TimeStamp1
-        IntDataArr[1][1] = Cosine
-        Interpolation = (float(IntDataArr[1][0]) + ((float(Cosine) - float(IntDataArr[1][0])) / (float(TimeStamp2) - float(IntDataArr[0][0]))) *  (float(TimeStamp1) - float(IntDataArr[0][0])))
-        IntDataArr[1][2] = Interpolation
+            TimeStampCosine,Cosine = Data2.split(",")
+            CosineTime = time.ctime(float(TimeStampCosine))
+            
+        if not q1.empty() and q2.empty():
+            Data1 = q1.get()
+            TimeStampSine,Sine = Data1.split(",")
+            SineTime = time.ctime(float(TimeStampSine))
+            
+        if not q2.empty() and q1.empty():
+            Data2 = q2.get()
+            TimeStampCosine,Cosine = Data2.split(",")
+            CosineTime = time.ctime(float(TimeStampCosine))
+            
+        IntDataArrTime.append(float(TimeStampCosine))
+        IntDataArrCosine.append(float(Cosine))
+        IntDataArrSineTime.append(float(TimeStampSine))
 
-        for r in IntDataArr:
-            for c in r:
-                print(c,end = " ")
-            print()
-
-        IntDataArr[0][0] = TimeStamp2
-        IntDataArr[1][0] = Cosine
+        ValidInterp = True
+        
+        if len(IntDataArrTime)>5:
+            IntDataArrTime.popleft()
+        if len(IntDataArrCosine)>5:
+            IntDataArrCosine.popleft()
+        if len(IntDataArrSineTime)>5:
+            IntDataArrSineTime.popleft()
+        try:
+            Interpolation = (IntDataArrCosine[-3]) + (((IntDataArrCosine[-2]) - (IntDataArrCosine[-3])) / ((IntDataArrTime[-2]) - (IntDataArrTime[-3]))) *  ((IntDataArrSineTime[-2]) - (IntDataArrTime[-3]))
+        except:
+            print("Not enough data to interpolate. Continuing.")
+            continue
+        with open("Interpolation.csv","a") as file:
+            #Opens this file^ Writes data here. 
+            writer = csv.writer(file, delimiter=",")
+            writer.writerow(("Channel 1 Data",SineTime,Sine,"|","Channel 2 Data",CosineTime,Cosine,"Interp:" + Interpolation,ValidInterp))
+        print(Interpolation)
     
     except KeyboardInterrupt:
         print("Keyboard Interrupt")

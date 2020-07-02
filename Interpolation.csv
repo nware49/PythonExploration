@@ -1,0 +1,104 @@
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Not,enough,data.,x,x,x,x,False
+Channel 1 Data,Thu Jul  2 17:10:29 2020,0.2588,Channel 2 Data,Thu Jul  2 17:10:29 2020,0.965,Interp:0.9650,True
+Channel 1 Data,Thu Jul  2 17:10:30 2020,0.5,Channel 2 Data,Thu Jul  2 17:10:30 2020,0.866,Interp:0.8590,True
+x,x,x,Channel 2 Data,1593724231.4421566,0.707,x,False
+Channel 1 Data,Thu Jul  2 17:10:31 2020,0.7071,Channel 2 Data,Thu Jul  2 17:10:32 2020,0.5,Interp:0.6720,True
+Channel 1 Data,Thu Jul  2 17:10:32 2020,0.866,Channel 2 Data,Thu Jul  2 17:10:33 2020,0.258,Interp:0.4256,True
+Channel 1 Data,Thu Jul  2 17:10:34 2020,0.9659,Channel 2 Data,Thu Jul  2 17:10:34 2020,0.0,Interp:0.1278,True
+Channel 1 Data,Thu Jul  2 17:10:35 2020,1.0,Channel 2 Data,Thu Jul  2 17:10:36 2020,-0.258,Interp:-0.1428,True
+Channel 1 Data,Thu Jul  2 17:10:36 2020,0.9659,Channel 2 Data,Thu Jul  2 17:10:37 2020,-0.5,Interp:-0.4005,True
+Channel 1 Data,Thu Jul  2 17:10:38 2020,0.866,Channel 2 Data,Thu Jul  2 17:10:38 2020,-0.707,Interp:-0.6323,True
+Channel 1 Data,Thu Jul  2 17:10:39 2020,0.7071,Channel 2 Data,Thu Jul  2 17:10:39 2020,-0.866,Interp:-0.8021,True
+Channel 1 Data,Thu Jul  2 17:10:40 2020,0.5,Channel 2 Data,Thu Jul  2 17:10:41 2020,-0.965,Interp:-0.9333,True
+Channel 1 Data,Thu Jul  2 17:10:41 2020,0.2588,Channel 2 Data,Thu Jul  2 17:10:42 2020,-1.0,Interp:-0.9902,True
+Channel 1 Data,Thu Jul  2 17:10:43 2020,0.0,Channel 2 Data,Thu Jul  2 17:10:43 2020,-0.965,Interp:-0.9728,True
+Channel 1 Data,Thu Jul  2 17:10:44 2020,-0.2588,Channel 2 Data,Thu Jul  2 17:10:44 2020,-0.866,Interp:-0.8739,True
+Channel 1 Data,Thu Jul  2 17:10:45 2020,-0.5,Channel 2 Data,Thu Jul  2 17:10:45 2020,-0.707,Interp:-0.7066,True
+Channel 1 Data,Thu Jul  2 17:10:47 2020,-0.7071,Channel 2 Data,Thu Jul  2 17:10:47 2020,-0.5,Interp:-0.4943,True
+Channel 1 Data,Thu Jul  2 17:10:48 2020,-0.866,Channel 2 Data,Thu Jul  2 17:10:48 2020,-0.258,Interp:-0.2483,True
+Channel 1 Data,Thu Jul  2 17:10:49 2020,-0.9659,Channel 2 Data,Thu Jul  2 17:10:49 2020,-0.0,Interp:0.0351,True
+x,x,x,Channel 2 Data,1593724250.6800978,0.258,x,False
+Channel 1 Data,1593724250.853924,-1.0,x,x,x,x,False
+x,x,x,Channel 2 Data,1593724251.8204987,0.5,x,False
+Channel 1 Data,Thu Jul  2 17:10:52 2020,-0.9659,Channel 2 Data,Thu Jul  2 17:10:52 2020,0.707,Interp:0.5611,True
+Channel 1 Data,Thu Jul  2 17:10:53 2020,-0.866,Channel 2 Data,Thu Jul  2 17:10:54 2020,0.866,Interp:0.7866,True
+Channel 1 Data,Thu Jul  2 17:10:54 2020,-0.7071,Channel 2 Data,Thu Jul  2 17:10:55 2020,0.965,Interp:0.9243,True
+Channel 1 Data,Thu Jul  2 17:10:56 2020,-0.5,Channel 2 Data,Thu Jul  2 17:10:56 2020,1.0,Interp:0.9887,True
+Channel 1 Data,Thu Jul  2 17:10:57 2020,-0.2588,Channel 2 Data,Thu Jul  2 17:10:57 2020,0.965,Interp:0.9733,True
+Channel 1 Data,Thu Jul  2 17:10:58 2020,-0.0,Channel 2 Data,Thu Jul  2 17:10:58 2020,0.866,Interp:0.8793,True
+Channel 1 Data,Thu Jul  2 17:11:00 2020,0.2588,Channel 2 Data,Thu Jul  2 17:11:00 2020,0.707,Interp:0.7226,True
+Channel 1 Data,Thu Jul  2 17:11:01 2020,0.5,Channel 2 Data,Thu Jul  2 17:11:01 2020,0.5,Interp:0.4880,True
+Channel 1 Data,Thu Jul  2 17:11:02 2020,0.7071,Channel 2 Data,Thu Jul  2 17:11:02 2020,0.258,Interp:0.2147,True
+x,x,x,Channel 2 Data,1593724263.678331,0.0,x,False
+Channel 1 Data,Thu Jul  2 17:11:04 2020,0.866,Channel 2 Data,Thu Jul  2 17:11:04 2020,-0.258,Interp:-0.0731,True
+Channel 1 Data,Thu Jul  2 17:11:05 2020,0.9659,Channel 2 Data,Thu Jul  2 17:11:06 2020,-0.5,Interp:-0.3665,True
+Channel 1 Data,Thu Jul  2 17:11:06 2020,1.0,Channel 2 Data,Thu Jul  2 17:11:07 2020,-0.707,Interp:-0.6098,True
+Channel 1 Data,Thu Jul  2 17:11:07 2020,0.9659,Channel 2 Data,Thu Jul  2 17:11:08 2020,-0.866,Interp:-0.7926,True
+Channel 1 Data,Thu Jul  2 17:11:09 2020,0.866,Channel 2 Data,Thu Jul  2 17:11:09 2020,-0.965,Interp:-0.9239,True
+Channel 1 Data,1593724270.4193857,0.7071,x,x,x,x,False
+Channel 1 Data,1593724271.6638522,0.5,x,x,x,x,False
+Channel 1 Data,1593724272.9633112,0.2588,x,x,x,x,False
+Channel 1 Data,1593724274.2529895,0.0,x,x,x,x,False
+Channel 1 Data,1593724275.5278206,-0.2588,x,x,x,x,False
+Channel 1 Data,1593724276.9637747,-0.5,x,x,x,x,False
+Channel 1 Data,1593724278.2267332,-0.7071,x,x,x,x,False
+Channel 1 Data,1593724279.4494255,-0.866,x,x,x,x,False
+Channel 1 Data,Thu Jul  2 17:11:20 2020,-0.9659,Channel 2 Data,Thu Jul  2 17:11:10 2020,-1.0,Interp:-1.3072,True
+Channel 1 Data,Thu Jul  2 17:11:22 2020,-1.0,Channel 2 Data,Thu Jul  2 17:11:12 2020,0.866,Interp:15.8657,True
+Channel 1 Data,Thu Jul  2 17:11:23 2020,-0.9659,Channel 2 Data,Thu Jul  2 17:11:23 2020,0.965,Interp:0.9602,True
+Channel 1 Data,Thu Jul  2 17:11:24 2020,-0.866,Channel 2 Data,Thu Jul  2 17:11:25 2020,1.0,Interp:0.9888,True
+Channel 1 Data,Thu Jul  2 17:11:25 2020,-0.7071,Channel 2 Data,Thu Jul  2 17:11:26 2020,0.965,Interp:0.9744,True
+Channel 1 Data,Thu Jul  2 17:11:27 2020,-0.5,Channel 2 Data,Thu Jul  2 17:11:27 2020,0.866,Interp:0.8757,True
+Channel 1 Data,Thu Jul  2 17:11:28 2020,-0.2588,Channel 2 Data,Thu Jul  2 17:11:28 2020,0.707,Interp:0.7066,True
+Channel 1 Data,Thu Jul  2 17:11:29 2020,-0.0,Channel 2 Data,Thu Jul  2 17:11:29 2020,0.5,Interp:0.4800,True
+Channel 1 Data,Thu Jul  2 17:11:31 2020,0.2588,Channel 2 Data,Thu Jul  2 17:11:31 2020,0.258,Interp:0.2135,True
+Channel 1 Data,Thu Jul  2 17:11:32 2020,0.5,Channel 2 Data,Thu Jul  2 17:11:32 2020,0.0,Interp:-0.0832,True
+Channel 1 Data,Thu Jul  2 17:11:33 2020,0.7071,Channel 2 Data,Thu Jul  2 17:11:33 2020,-0.258,Interp:-0.3334,True
+x,x,x,Channel 2 Data,1593724294.6197376,-0.5,x,False
+Channel 1 Data,Thu Jul  2 17:11:35 2020,0.866,Channel 2 Data,Thu Jul  2 17:11:35 2020,-0.707,Interp:-0.5896,True
+Channel 1 Data,Thu Jul  2 17:11:36 2020,0.9659,Channel 2 Data,Thu Jul  2 17:11:37 2020,-0.866,Interp:-0.7815,True
+Channel 1 Data,Thu Jul  2 17:11:37 2020,1.0,Channel 2 Data,Thu Jul  2 17:11:38 2020,-0.965,Interp:-0.9236,True
+Channel 1 Data,Thu Jul  2 17:11:38 2020,0.9659,Channel 2 Data,Thu Jul  2 17:11:39 2020,-1.0,Interp:-0.9902,True
+x,x,x,Channel 2 Data,1593724300.4389248,-0.965,x,False
+x,x,x,Channel 2 Data,1593724301.6941414,-0.866,x,False
+x,x,x,Channel 2 Data,1593724302.8463776,-0.707,x,False
+x,x,x,Channel 2 Data,1593724304.0264723,-0.5,x,False
+x,x,x,Channel 2 Data,1593724305.3359556,-0.258,x,False
+x,x,x,Channel 2 Data,1593724306.568019,0.0,x,False
+x,x,x,Channel 2 Data,1593724307.8337615,0.258,x,False
+x,x,x,Channel 2 Data,1593724309.0399141,0.5,x,False
+x,x,x,Channel 2 Data,1593724310.2690637,0.707,x,False
+x,x,x,Channel 2 Data,1593724311.430109,0.866,x,False
+x,x,x,Channel 2 Data,1593724312.6320744,0.965,x,False
+x,x,x,Channel 2 Data,1593724313.9297557,1.0,x,False
+x,x,x,Channel 2 Data,1593724315.1240265,0.965,x,False
+x,x,x,Channel 2 Data,1593724316.3184175,0.866,x,False
+x,x,x,Channel 2 Data,1593724317.521378,0.707,x,False
+x,x,x,Channel 2 Data,1593724318.7955306,0.5,x,False
+Channel 1 Data,Thu Jul  2 17:11:40 2020,0.866,Channel 2 Data,Thu Jul  2 17:11:59 2020,0.258,Interp:4.2520,True
+Channel 1 Data,Thu Jul  2 17:11:41 2020,-0.0,Channel 2 Data,Thu Jul  2 17:12:01 2020,0.0,Interp:4.4507,True
+Channel 1 Data,Thu Jul  2 17:12:02 2020,0.2588,Channel 2 Data,Thu Jul  2 17:12:02 2020,-0.258,Interp:-0.2725,True
+Channel 1 Data,Thu Jul  2 17:12:03 2020,0.5,Channel 2 Data,Thu Jul  2 17:12:03 2020,-0.5,Interp:-0.5311,True
+x,x,x,Channel 2 Data,1593724324.651423,-0.707,x,False
+Channel 1 Data,1593724324.9871006,0.7071,x,x,x,x,False
+x,x,x,Channel 2 Data,1593724325.8059216,-0.866,x,False
+Channel 1 Data,Thu Jul  2 17:12:06 2020,0.866,Channel 2 Data,Thu Jul  2 17:12:07 2020,-0.965,Interp:-0.9002,True
+Channel 1 Data,Thu Jul  2 17:12:07 2020,0.9659,Channel 2 Data,Thu Jul  2 17:12:08 2020,-1.0,Interp:-0.9828,True
+Channel 1 Data,Thu Jul  2 17:12:08 2020,1.0,Channel 2 Data,Thu Jul  2 17:12:09 2020,-0.965,Interp:-0.9786,True
+Channel 1 Data,Thu Jul  2 17:12:10 2020,0.9659,Channel 2 Data,Thu Jul  2 17:12:10 2020,-0.866,Interp:-0.8969,True
+Channel 1 Data,Thu Jul  2 17:12:11 2020,0.866,Channel 2 Data,Thu Jul  2 17:12:11 2020,-0.707,Interp:-0.7481,True
+Channel 1 Data,Thu Jul  2 17:12:12 2020,0.7071,Channel 2 Data,Thu Jul  2 17:12:12 2020,-0.5,Interp:-0.5213,True
+Channel 1 Data,Thu Jul  2 17:12:14 2020,0.5,Channel 2 Data,Thu Jul  2 17:12:14 2020,-0.258,Interp:-0.2794,True
+Channel 1 Data,Thu Jul  2 17:12:15 2020,0.2588,Channel 2 Data,Thu Jul  2 17:12:15 2020,0.0,Interp:0.0142,True
+Channel 1 Data,Thu Jul  2 17:12:16 2020,0.0,Channel 2 Data,Thu Jul  2 17:12:16 2020,0.258,Interp:0.2831,True
+Channel 1 Data,Thu Jul  2 17:12:17 2020,-0.2588,Channel 2 Data,Thu Jul  2 17:12:17 2020,0.5,Interp:0.5336,True
+Channel 1 Data,Thu Jul  2 17:12:19 2020,-0.5,Channel 2 Data,Thu Jul  2 17:12:19 2020,0.707,Interp:0.7489,True

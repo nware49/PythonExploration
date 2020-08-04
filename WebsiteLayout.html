@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<html>
+    <head>  
+    </head>
+    <body>
+    <script>
+        var socket = new WebSocket("ws://raspberrypi:8888/ws");
+        var lastPwrExpMovAvg = null;
+        var weightConstant = 0.2;
+        
+        socket.onopen = function(){  
+          console.log("connected"); 
+        }; 
+
+        socket.onmessage = function (message) {
+          console.log("receiving: " + message.data);
+          var SplitMessage = (message.data).split(", ");
+          var time = SplitMessage[0];
+          var absorb = SplitMessage[1];
+          var depth = SplitMessage[2];
+          var pwr = SplitMessage[3];
+          if (lastPwrExpMovAvg == null){
+            lastPwrExpMovAvg = pwr;
+            }
+          var pwrExpMovAvg = (weightConstant*pwr + (1 - weightConstant)*lastPwrExpMovAvg).toPrecision(3)
+          document.getElementById("timePoint").innerHTML = 'Time: ' + time;
+          document.getElementById("absorbPoint").innerHTML = 'Absorbance: ' + absorb;
+          document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
+          document.getElementById("pwrPoint").innerHTML = 'Power: ' + pwr;
+          document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpMovAvg;
+          lastPwrExpMovAvg = pwrExpMovAvg;
+          };
+
+        socket.onclose = function(){
+          console.log("disconnected"); 
+        };
+
+        sendMessage = function(message) {
+          socket.send(message);
+        };
+
+      </script>
+    
+    <div id=timePoint></div>
+    <div id=absorbPoint></div>
+    <div id=depthPoint></div>
+    <div id=pwrPoint></div>
+    <div id=pwrExpAvg></div>
+    
+    </body>
+    
+</html>
+

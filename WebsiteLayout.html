@@ -13,22 +13,35 @@
         }; 
 
         socket.onmessage = function (message) {
-          console.log("receiving: " + message.data);
-          var SplitMessage = (message.data).split(", ");
-          var time = SplitMessage[0];
-          var absorb = SplitMessage[1];
-          var depth = SplitMessage[2];
-          var pwr = SplitMessage[3];
-          if (lastPwrExpMovAvg == null){
-            lastPwrExpMovAvg = pwr;
+          
+          if ((message.data).length < 100){
+            var SplitMessage = (message.data).split(", ");
+            console.log("receiving: " + message.data);
+            var time = SplitMessage[0];
+            var absorb = SplitMessage[1];
+            var depth = SplitMessage[2];
+            var pwr = SplitMessage[3];
+            if (lastPwrExpMovAvg == null){
+              lastPwrExpMovAvg = pwr;
+              }
+            var pwrExpMovAvg = (weightConstant*pwr + (1 - weightConstant)*lastPwrExpMovAvg).toPrecision(3)
+            document.getElementById("timePoint").innerHTML = 'Time: ' + time;
+            document.getElementById("absorbPoint").innerHTML = 'Absorbance: ' + absorb;
+            document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
+            document.getElementById("pwrPoint").innerHTML = 'Power: ' + pwr;
+            document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpMovAvg;
+            lastPwrExpMovAvg = pwrExpMovAvg;
             }
-          var pwrExpMovAvg = (weightConstant*pwr + (1 - weightConstant)*lastPwrExpMovAvg).toPrecision(3)
-          document.getElementById("timePoint").innerHTML = 'Time: ' + time;
-          document.getElementById("absorbPoint").innerHTML = 'Absorbance: ' + absorb;
-          document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
-          document.getElementById("pwrPoint").innerHTML = 'Power: ' + pwr;
-          document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpMovAvg;
-          lastPwrExpMovAvg = pwrExpMovAvg;
+          else{
+            var powerPlotPlace = document.getElementById('powerPlot');
+            var base64Plot = 'data:image/jpg;base64,' + (message.data)
+            var image = document.createElement('img');
+            image.onload = function() {
+                powerPlotPlace.innerHTML = '';
+                powerPlotPlace.appendChild(this);
+            }
+            image.src = base64Plot;
+            }    
           };
 
         socket.onclose = function(){
@@ -46,8 +59,8 @@
     <div id=depthPoint></div>
     <div id=pwrPoint></div>
     <div id=pwrExpAvg></div>
-    
+
+    <div id=powerPlot padding=100px></div>
     </body>
     
 </html>
-

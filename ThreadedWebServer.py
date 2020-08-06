@@ -1,19 +1,23 @@
-import threading
-from threading import Thread, Event
-import collections
-import queue
-import logging
 import time
 import random
 import serial
 import csv
 import re
+import threading
+from threading import Thread, Event
+import collections
+import queue
+import logging
 from datetime import datetime
+import base64
 import numpy as np
-from ThorlabsPM100 import ThorlabsPM100
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.cbook as cbook
 import usbtmc as usbtmc
 import usb
 from usb.core import find as finddev
+from ThorlabsPM100 import ThorlabsPM100
 
 import tornado.httpserver
 import tornado.httpserver
@@ -22,6 +26,7 @@ import tornado.web
 import tornado.websocket
 import tornado.gen
 from tornado.options import define, options
+import io
 import asyncio
 
 PMInitBreak = Event()
@@ -32,6 +37,11 @@ PMAbsent = False
 define("port", default=8888, help="run on the given port", type=int)
 clients = []
 
+timeValues = []
+absorbanceValues = []
+depthValues = []
+powerValues = []
+
 global qXMiss
 global qCTD
 global qPwrM
@@ -39,6 +49,7 @@ qXMiss = queue.Queue(10)
 qCTD = queue.Queue(10)
 qPwrM = queue.Queue(10)
 qWebSock = queue.Queue(10)
+qPlots = queue.Queue(10)
 
 PortChannel1 = "/dev/ttySC0"
 PortChannel2 = "/dev/ttySC1"
@@ -297,7 +308,8 @@ class ConsumerWhileLoop(threading.Thread):
                     csvWrite(XMissDataFile,(FormXMissTime,Absorbance),"a")
                     if CTDTimeout == False:
                         try:
-                            CTDInterpolation = (IDACTD[-2]) + (((IDACTD[-1]) - (IDACTD[-2])) / ((IDACTDTime[-1]) - (IDACTDTime[-2]))) *  ((IDAXMissTime[-1]) - (IDACTDTime[-2]))
+                            CTDInterpolation = (IDACTD[-2]) + (((IDACTD[-1]) - (IDACTD[-2])) /
+                                ((IDACTDTime[-1]) - (IDACTDTime[-2]))) *  ((IDAXMissTime[-1]) - (IDACTDTime[-2]))
                             ShortCTDInterp = format(CTDInterpolation, '.3f')
                             csvWrite(CTDInterpFile,(FormXMissTime,FormCTDTime,ShortCTDInterp),"a")
                             CTDValInterp = True
@@ -325,8 +337,9 @@ class ConsumerWhileLoop(threading.Thread):
                         try:
                             XMissTime = IDAXMissTime[-1 - c]
                             FormXMissTime = time.ctime(float(XMissTime))
-                            PMInterpolation = (IDAPwr[-2]) + (((IDAPwr[-1]) - (IDAPwr[-2])) / ((IDAPwrMTime[-1]) - (IDAPwrMTime[-2]))) *  ((XMissTime) - (IDAPwrMTime[-2]))
-                            ShortPMInterp = '{:.2e}'.format(PMInterpolation)
+                            PMInterpolation = (IDAPwr[-2]) + (((IDAPwr[-1]) - (IDAPwr[-2])) /
+                                ((IDAPwrMTime[-1]) - (IDAPwrMTime[-2]))) *  ((XMissTime) - (IDAPwrMTime[-2]))
+                            ShortPMInterp = float('{:.2e}'.format(PMInterpolation))
                             csvWrite(PMInterpFile,(FormXMissTime,FormPwrMTime,FormPower,ShortPMInterp),"a")
                             PMValInterp = True
                             
@@ -342,6 +355,7 @@ class ConsumerWhileLoop(threading.Thread):
                         c -= 1
                         
                 CurrentTime = datetime.now()
+                PlotTime = format((time.time()), '.1f')
                 StrfTime = CurrentTime.strftime("%H:%M:%S")
                 if XMissTimeout == True:
                     Absorbance = "-"
@@ -352,7 +366,54 @@ class ConsumerWhileLoop(threading.Thread):
                 if PwrMTimeout == True:
                     ShortPMInterp = "-"
                 OutgoingData = (str(StrfTime) + ", " + str(Absorbance) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp))
-                qWebSock.put(OutgoingData)
+                try:
+                    timeValues.append(CurrentTime)
+                    powerValues.append(ShortPMInterp*1000000000)
+                    depthValues.append(float(ShortCTDInterp))
+                    absorbanceValues.append(float(Absorbance))
+
+                except:
+                    print("Missing Data")
+                plotLength = 20
+                if len(timeValues)>plotLength:
+                    timeValues.pop(0)
+                if len(absorbanceValues)>plotLength:
+                    absorbanceValues.pop(0)
+                if len(depthValues)>plotLength:
+                    depthValues.pop(0)
+                if len(powerValues)>plotLength:
+                    powerValues.pop(0)
+                try:        
+                    figPower = plt.figure()
+                    figPower, ax1 = plt.subplots()
+
+                    color = "tab:red"
+                    ax1.set_xlabel("depth (m)", color=color)
+                    ax1.set_ylabel("power (nanowatts * m^2)", color=color)
+                    ax1.plot(depthValues, powerValues, marker= "o", color= color)
+                    ax1.tick_params(axis='y', labelcolor=color)
+
+                    ax2 = ax1.twinx()
+
+                    color = "tab:blue"
+                    ax2.set_ylabel("absorbance (nm/m)", color=color)
+                    ax2.plot(depthValues, absorbanceValues, marker= "o", color= color)
+                    ax2.tick_params(axis='y', labelcolor=color)
+                    
+                    plt.title("Power Meter vs. Depth")
+                    figPower.savefig("PowerPlot.jpg")
+                    figPower.tight_layout()
+                    plt.close()
+
+                    powerPlot = open("PowerPlot.jpg", 'rb')
+                    powerPlotRead = powerPlot.read()
+                    powerPlotEncode = base64.encodebytes(powerPlotRead)
+                    qPlots.put(powerPlotEncode)
+                    
+                    qWebSock.put(OutgoingData)
+                except Exception as Exc:
+                    print(Exc)
+                    print("Graph could not be generated.")
                         
             except Exception as Exc:
                 print(Exc)
@@ -364,7 +425,7 @@ class ConsumerWhileLoop(threading.Thread):
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render('WebsiteLayout.html')
+        self.render('WebsiteLayout.html', filename='PowerPlot.jpg')
  
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def check_origin(self, origin):
@@ -391,6 +452,10 @@ class WebSocketHost(threading.Thread):
                 EncodedData = SensorData.encode()
                 for c in clients:
                     c.write_message(EncodedData)
+            if not qPlots.empty():
+                PlotData = qPlots.get()
+                for c in clients:
+                    c.write_message(PlotData)
         
         asyncio.set_event_loop(asyncio.new_event_loop())
         tornado.options.parse_command_line()
@@ -430,3 +495,11 @@ if __name__ == '__main__':
 
     WebSockHost = WebSocketHost()
     WebSockHost.start()
+
+    while True:
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            print("Keyboard Interrupt")
+            breakIndicator = True
+            exit()

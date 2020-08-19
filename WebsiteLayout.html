@@ -1,6 +1,12 @@
 <!DOCTYPE HTML>
 <html>
-    <head>  
+    <head>
+        <style>
+        body{
+          background-color: #99ddff;
+        }
+        </style>
+        <h1>Oceanographic Sensor Monitor Website</h1>
     </head>
     <body>
     <script>
@@ -8,46 +14,68 @@
         var lastPwrExpMovAvg = null;
         var weightConstant = 0.2;
         
+        function changePlotLength(){
+            var plotLength = document.getElementById("newPlotLength").value;
+            document.getElementById("newPlotLength").innerHTML = plotLength;
+            const plotLengthString = "plen#" + plotLength;
+            sendMessage(plotLengthString);
+        
         socket.onopen = function(){  
-          console.log("connected"); 
+            console.log("connected"); 
         }; 
 
-        socket.onmessage = function (message) {
-          
-           var StringType = (message.data).slice(0,2);
-           if (StringType == "d#"){
-            var SplitMessage = (message.data).split(", ");
-            console.log("receiving: " + message.data);
-            var time = SplitMessage[0];
-            var absorb = SplitMessage[1];
-            var depth = SplitMessage[2];
-            var pwr = SplitMessage[3];
-            var pwrExpAvg = SplitMessage[4];
-            var pwrExpMovAvg = (weightConstant*pwr + (1 - weightConstant)*lastPwrExpMovAvg).toPrecision(3);
-            document.getElementById("timePoint").innerHTML = 'Time: ' + time;
-            document.getElementById("absorbPoint").innerHTML = 'Absorbance: ' + absorb;
-            document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
-            document.getElementById("pwrPoint").innerHTML = 'Power: ' + pwr;
-            document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpAvg;
+        socket.onmessage = function (message){
+            var StringType = (message.data).slice(0,5);
+            if (StringType == "data#"){
+                var Message = (message.data).slice(5);
+                var SplitMessage = (Message).split(", ");
+                console.log("receiving: " + message.data);
+                var time = SplitMessage[0];
+                var absorb = SplitMessage[1];
+                var depth = SplitMessage[2];
+                var pwr = SplitMessage[3];
+                var pwrExpAvg = SplitMessage[4];
+                document.getElementById("timePoint").innerHTML = 'Time: ' + time;
+                document.getElementById("absorbPoint").innerHTML = 'Absorbance: ' + absorb;
+                document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
+                document.getElementById("pwrPoint").innerHTML = 'Power: ' + pwr;
+                document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpAvg;
             }
-          else{
-            var powerPlotPlace = document.getElementById('powerPlot');
-            var base64Plot = 'data:image/jpg;base64,' + (message.data)
-            var image = document.createElement('img');
-            image.onload = function() {
-                powerPlotPlace.innerHTML = '';
-                powerPlotPlace.appendChild(this);
-            }
-            image.src = base64Plot;
-            }    
-          };
 
-        socket.onclose = function(){
-          console.log("disconnected"); 
+            if (StringType == "plot#"){
+                var Message = (message.data).slice(5);
+                var PlotType = Message.slice(0,4);
+                if (PlotType == "raw#"){
+                    var plotImageData = Message.slice(4);
+                    var powerPlotPlace = document.getElementById('powerPlot');
+                    var base64Plot = 'data:image/jpg;base64,' + (plotImageData)
+                    var image = document.createElement('img');
+                    image.onload = function(){
+                        powerPlotPlace.innerHTML = '';
+                        powerPlotPlace.appendChild(this);
+                    }
+                    image.src = base64Plot;
+                }
+                if (PlotType == "exp#"){
+                    var plotImageData = Message.slice(4);
+                    var pwrExpAvgPlotPlace = document.getElementById('pwrExpAvgPlot');
+                    var base64Plot = 'data:image/jpg;base64,' + (plotImageData)
+                    var image = document.createElement('img');
+                    image.onload = function(){
+                        pwrExpAvgPlotPlace.innerHTML = '';
+                        pwrExpAvgPlotPlace.appendChild(this);
+                    }
+                    image.src = base64Plot;
+                }
+            }
         };
 
-        sendMessage = function(message) {
-          socket.send(message);
+        socket.onclose = function(){
+            console.log("disconnected"); 
+        };
+
+        sendMessage = function(message){
+            socket.send(message);
         };
 
       </script>
@@ -59,6 +87,12 @@
     <div id=pwrExpAvg></div>
 
     <div id=powerPlot padding=100px></div>
+    <div id=pwrExpAvgPlot padding=100px></div>
+        
+    <label for="newPlotLength">Change Plot Length:</label>
+    <input type="text" id="newPlotLength" value="default">
+    <button type="button" onclick="changePlotLength"> Change </button>
+
     </body>
     
 </html>

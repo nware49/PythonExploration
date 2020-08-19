@@ -484,7 +484,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print('new connection')
         clients.append(self)
     def on_message(self, message):
-        print('message received %s') % message
+        print(message)
+        MessageType = message[0:5]
+        if MessageType == "plen#":
+            global plotLength
+            plotLength = message[5:]
+        
     def on_close(self):
         print('connection closed')
         clients.remove(self)

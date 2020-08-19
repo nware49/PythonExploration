@@ -41,15 +41,15 @@ timeValues = []
 absorbanceValues = []
 depthValues = []
 powerValues = []
+pwrExpAvgValues = []
 
-global qXMiss
-global qCTD
-global qPwrM
 qXMiss = queue.Queue(10)
 qCTD = queue.Queue(10)
 qPwrM = queue.Queue(10)
 qWebSock = queue.Queue(10)
 qPlots = queue.Queue(10)
+
+lastPwrExpAvg = None
 
 PortChannel1 = "/dev/ttySC0"
 PortChannel2 = "/dev/ttySC1"
@@ -246,8 +246,9 @@ class ConsumerWhileLoop(threading.Thread):
             XMissValInterp = False
             CTDValInterp = False
             PMValInterp = False
-            #if breakIndicator == True:
-                #break
+            
+            if breakIndicator == True:
+                break
 
             if len(IDAXMissTime)>5:
                 IDAXMissTime.popleft()
@@ -269,7 +270,6 @@ class ConsumerWhileLoop(threading.Thread):
                 IDAPwr.popleft()
 
             try:
-                
                 if qXMiss.empty() and qCTD.empty() and qPwrM.empty():
                     time.sleep(0.125)
                     continue
@@ -353,6 +353,16 @@ class ConsumerWhileLoop(threading.Thread):
                             ShortPMInterp = FormPower
                             
                         c -= 1
+                #Exponential Average Calculation
+                weightConstant = 0.2
+                try:
+                    if lastPwrExpAvg == None:
+                        pwrExpAvg = ShortPMInterp
+                    else:
+                        pwrExpAvg = float('{:.2e}'.format(weightConstant*ShortPMInterp + (1 - weightConstant)*lastPwrExpAvg))
+                    lastPwrExpAvg = pwrExpAvg
+                except:
+                    pwrExpAvg = "-"
                         
                 CurrentTime = datetime.now()
                 PlotTime = format((time.time()), '.1f')
@@ -365,13 +375,17 @@ class ConsumerWhileLoop(threading.Thread):
                         ShortPMInterp = FormPower
                 if PwrMTimeout == True:
                     ShortPMInterp = "-"
-                OutgoingData = (str(StrfTime) + ", " + str(Absorbance) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp))
+                OutgoingData = ("data#" + str(StrfTime) + ", " + str(Absorbance) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
+                
+                qWebSock.put(OutgoingData)
+                
                 try:
                     timeValues.append(CurrentTime)
                     powerValues.append(ShortPMInterp*1000000000)
                     depthValues.append(float(ShortCTDInterp))
                     absorbanceValues.append(float(Absorbance))
-
+                    pwrExpAvgValues.append(pwrExpAvg*1000000000)
+                    
                 except:
                     print("Missing Data")
                 plotLength = 20
@@ -383,6 +397,9 @@ class ConsumerWhileLoop(threading.Thread):
                     depthValues.pop(0)
                 if len(powerValues)>plotLength:
                     powerValues.pop(0)
+                if len(pwrExpAvgValues)>plotLength:
+                    pwrExpAvgValues.pop(0)
+                #Raw Power Data Plot
                 try:        
                     figPower = plt.figure()
                     figPower, ax1 = plt.subplots()
@@ -400,7 +417,7 @@ class ConsumerWhileLoop(threading.Thread):
                     ax2.plot(depthValues, absorbanceValues, marker= "o", color= color)
                     ax2.tick_params(axis='y', labelcolor=color)
                     
-                    plt.title("Power Meter vs. Depth")
+                    plt.title("Power and Absorbance vs. Depth")
                     figPower.savefig("PowerPlot.jpg")
                     figPower.tight_layout()
                     plt.close()
@@ -408,9 +425,42 @@ class ConsumerWhileLoop(threading.Thread):
                     powerPlot = open("PowerPlot.jpg", 'rb')
                     powerPlotRead = powerPlot.read()
                     powerPlotEncode = base64.encodebytes(powerPlotRead)
-                    qPlots.put(powerPlotEncode)
+                    qPlots.put("plot#raw#" + powerPlotEncode)
+                    print(powerPlotEncode)
                     
-                    qWebSock.put(OutgoingData)
+                except Exception as Exc:
+                    print(Exc)
+                    print("Raw Data Graph could not be generated.")
+               
+                #Exponential Average Data Plot
+                try:        
+                    figPower = plt.figure()
+                    figPower, ax1 = plt.subplots()
+
+                    color = "tab:green"
+                    ax1.set_xlabel("depth (m)", color=color)
+                    ax1.set_ylabel("power (nanowatts * m^2)", color=color)
+                    ax1.plot(depthValues, powerValues, marker= "o", color= color)
+                    ax1.tick_params(axis='y', labelcolor=color)
+
+                    ax2 = ax1.twinx()
+
+                    color = "tab:blue"
+                    ax2.set_ylabel("absorbance (nm/m)", color=color)
+                    ax2.plot(depthValues, absorbanceValues, marker= "o", color= color)
+                    ax2.tick_params(axis='y', labelcolor=color)
+                    
+                    plt.title("Absorbance and Average Power vs. Depth")
+                    figPower.savefig("ExpAvgPowerPlot.jpg")
+                    figPower.tight_layout()
+                    plt.close()
+
+                    expAvgPowerPlot = open("ExpAvgPowerPlot.jpg", 'rb')
+                    expAvgPowerPlotRead = expAvgPowerPlot.read()
+                    expAvgPowerPlotEncode = base64.encodebytes(expAvgPowerPlotRead)
+                    qPlots.put("plot#exp#" + expAvgPowerPlotEncode)
+                    print(powerPlotEncode)
+                     
                 except Exception as Exc:
                     print(Exc)
                     print("Graph could not be generated.")

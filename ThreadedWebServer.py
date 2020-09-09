@@ -1,10 +1,12 @@
+#!/usr/bin/python3
+
 import time
 import random
 import serial
 import csv
 import re
 import threading
-from threading import Thread, Event
+from threading import Thread, Event, Lock
 import collections
 import queue
 import logging
@@ -12,12 +14,16 @@ from datetime import datetime
 import base64
 import numpy as np
 import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.cbook as cbook
+from matplotlib import ticker
+from matplotlib import rcParams
 import usbtmc as usbtmc
 import usb
 from usb.core import find as finddev
 from ThorlabsPM100 import ThorlabsPM100
+
+import distutils.util
 
 import tornado.httpserver
 import tornado.httpserver
@@ -34,6 +40,8 @@ PMInitBreak = Event()
 CTDAbsent = False
 PMAbsent = False
 
+breakIndicator = False
+
 define("port", default=8888, help="run on the given port", type=int)
 clients = []
 
@@ -49,6 +57,18 @@ qPwrM = queue.Queue(10)
 qWebSock = queue.Queue(10)
 qPlots = queue.Queue(10)
 
+plotLengthLock = threading.Lock()
+plotLength = 100
+visiblePlotsLock = threading.Lock()
+absorbanceVisible = True
+depthVisible = True
+powerVisible = True
+pwrExpAvgVisible = True
+xAxisTypeLock = threading.Lock()
+xAxisType = "Time"
+
+weightConstant = 0.2
+
 lastPwrExpAvg = None
 
 PortChannel1 = "/dev/ttySC0"
@@ -60,8 +80,7 @@ def csvWrite(FileName,DataLine,EditMethod): #Ex. csvWrite("Data.csv",(Time,Dista
         writer.writerow(DataLine)
 
 now = datetime.now()
-Date = now.strftime("%m%d%Y")
-print(Date)
+Date = now.strftime("%Y%m%d-%H%M_")
 
 #File Names
 XMissDataFile = str(Date) + "XMissData.csv"
@@ -69,6 +88,9 @@ CTDDataFile = str(Date) + "CTDData.csv"
 CTDInterpFile = str(Date) + "CTDInterp.csv"
 PMDataFile = str(Date) + "PMData.csv"
 PMInterpFile = str(Date) + "PMInterp.csv"
+AllDataFile = str(Date) + "AllDataFile.csv"
+
+csvWrite(AllDataFile,("# Time", "Absorbance", "Depth", "Power", "Exp Avg Power"),"a")
 
 try:
     Serial1 = serial.Serial(PortChannel1)
@@ -170,11 +192,11 @@ class CTDThread(threading.Thread):
 
 def PowerMeterConfig():
     try:
-        dev = finddev(idVendor=0x1313, idProduct=0x8072)
+        dev = finddev(idVendor=0x1313, idProduct=0x807b)
         dev.reset()
 
         print('Initializing PM100... ', end='')
-        instr =  usbtmc.Instrument(4883, 32882)
+        instr =  usbtmc.Instrument(4883, 32891)
         global PowerMeter
         PowerMeter = ThorlabsPM100(inst=instr)
         
@@ -220,6 +242,8 @@ class PMThread(threading.Thread):
 
 breakIndicator = False
 
+rcParams.update({'figure.autolayout': True})
+
 class ConsumerWhileLoop(threading.Thread):
     def __init__(self, group=None, target=None, name=None,args=(), kwargs=None, verbose=None):
         super(ConsumerWhileLoop,self).__init__()
@@ -238,6 +262,7 @@ class ConsumerWhileLoop(threading.Thread):
         IDAFormPwrMTime = collections.deque()
         IDAPwrMTime = collections.deque()
         IDAPwr = collections.deque()
+
         #Consumer While Loop
         while True:
             XMissTimeout = True
@@ -246,7 +271,8 @@ class ConsumerWhileLoop(threading.Thread):
             XMissValInterp = False
             CTDValInterp = False
             PMValInterp = False
-            
+
+            global breakIndicator
             if breakIndicator == True:
                 break
 
@@ -270,6 +296,7 @@ class ConsumerWhileLoop(threading.Thread):
                 IDAPwr.popleft()
 
             try:
+                
                 if qXMiss.empty() and qCTD.empty() and qPwrM.empty():
                     time.sleep(0.125)
                     continue
@@ -342,6 +369,9 @@ class ConsumerWhileLoop(threading.Thread):
                             ShortPMInterp = float('{:.2e}'.format(PMInterpolation))
                             csvWrite(PMInterpFile,(FormXMissTime,FormPwrMTime,FormPower,ShortPMInterp),"a")
                             PMValInterp = True
+                            global weightConstant
+                            pwrExpAvg = '{:.2e}'.format(weightConstant*ShortPMInterp + (1 - weightConstant)*float(lastPwrExpAvg))
+                            lastPwrExpAvg = pwrExpAvg
                             
                         except KeyboardInterrupt:
                             print("Keyboard Interrupt")
@@ -351,18 +381,9 @@ class ConsumerWhileLoop(threading.Thread):
                             csvWrite(PMInterpFile,("Not enough data",),"a")
                             PMValInterp = False
                             ShortPMInterp = FormPower
-                            
+                            pwrExpAvg = ShortPMInterp
+                            lastPwrExpAvg = pwrExpAvg
                         c -= 1
-                #Exponential Average Calculation
-                weightConstant = 0.2
-                try:
-                    if lastPwrExpAvg == None:
-                        pwrExpAvg = ShortPMInterp
-                    else:
-                        pwrExpAvg = float('{:.2e}'.format(weightConstant*ShortPMInterp + (1 - weightConstant)*lastPwrExpAvg))
-                    lastPwrExpAvg = pwrExpAvg
-                except:
-                    pwrExpAvg = "-"
                         
                 CurrentTime = datetime.now()
                 PlotTime = format((time.time()), '.1f')
@@ -373,102 +394,146 @@ class ConsumerWhileLoop(threading.Thread):
                         ShortCTDInterp = Depth
                     if PwrMTimeout == False:
                         ShortPMInterp = FormPower
+                        pwrExpAvg = ShortPMInterp
                 if PwrMTimeout == True:
                     ShortPMInterp = "-"
+                    pwrExpAvg = "-"
+
                 OutgoingData = ("data#" + str(StrfTime) + ", " + str(Absorbance) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
-                
                 qWebSock.put(OutgoingData)
+
+                csvWrite(AllDataFile,(StrfTime,Absorbance,ShortCTDInterp,ShortPMInterp,pwrExpAvg),"a")
+
+                if XMissTimeout == True or PwrMTimeout == True or CTDTimeout == True:
+                    continue
                 
                 try:
-                    timeValues.append(CurrentTime)
-                    powerValues.append(ShortPMInterp*1000000000)
+                    pwrExpAvgValues.append(float(pwrExpAvg))
+                    powerValues.append(float(ShortPMInterp))
                     depthValues.append(float(ShortCTDInterp))
                     absorbanceValues.append(float(Absorbance))
-                    pwrExpAvgValues.append(pwrExpAvg*1000000000)
+                    timeValues.append(CurrentTime)
                     
-                except:
+                except Exception as Exc:
+                    print(Exc)
                     print("Missing Data")
-                plotLength = 20
-                if len(timeValues)>plotLength:
+                    continue
+                    
+                historyLength = 1000
+                if len(timeValues)>historyLength:
                     timeValues.pop(0)
-                if len(absorbanceValues)>plotLength:
+                if len(absorbanceValues)>historyLength:
                     absorbanceValues.pop(0)
-                if len(depthValues)>plotLength:
+                if len(depthValues)>historyLength:
                     depthValues.pop(0)
-                if len(powerValues)>plotLength:
+                if len(powerValues)>historyLength:
                     powerValues.pop(0)
-                if len(pwrExpAvgValues)>plotLength:
+                if len(pwrExpAvgValues)>historyLength:
                     pwrExpAvgValues.pop(0)
-                #Raw Power Data Plot
+                
+                global plotLength
+                localPlotLength = int(plotLength)
+                
+                timePlotValues = timeValues[-localPlotLength:-1]
+                absorbancePlotValues = absorbanceValues[-localPlotLength:-1]
+                depthPlotValues = depthValues[-localPlotLength:-1]
+                powerPlotValues = powerValues[-localPlotLength:-1]
+                pwrExpAvgPlotValues = pwrExpAvgValues[-localPlotLength:-1]
+                
+                #Data Plot
                 try:        
-                    figPower = plt.figure()
+                    figPower = plt.gcf()
+                    plt.clf()
                     figPower, ax1 = plt.subplots()
 
-                    color = "tab:red"
-                    ax1.set_xlabel("depth (m)", color=color)
-                    ax1.set_ylabel("power (nanowatts * m^2)", color=color)
-                    ax1.plot(depthValues, powerValues, marker= "o", color= color)
-                    ax1.tick_params(axis='y', labelcolor=color)
+                    color1 = "tab:green"
+                    color2 = "tab:red"
+                    color3 = "tab:blue"
+                    color4 = "tab:purple"
+                    color5 = "tab:orange"
 
-                    ax2 = ax1.twinx()
+                    global absorbanceVisible
+                    global depthVisible
+                    global powerVisible
+                    global pwrExpAvgVisible
 
-                    color = "tab:blue"
-                    ax2.set_ylabel("absorbance (nm/m)", color=color)
-                    ax2.plot(depthValues, absorbanceValues, marker= "o", color= color)
-                    ax2.tick_params(axis='y', labelcolor=color)
+                    localAbsorbanceVisible = absorbanceVisible
+                    localDepthVisible = depthVisible
+                    localPowerVisible = powerVisible
+                    localPwrExpAvgVisible = pwrExpAvgVisible
+
+                    global xAxisType
+                    xAxisTypeLocal = xAxisType
+                    if xAxisTypeLocal == "Time":
+                        xAxisValues = timePlotValues
+                        ax1.set_xlabel("time", color=color1)
+                    if xAxisTypeLocal == "Depth":
+                        xAxisValues = depthPlotValues
+                        ax1.set_xlabel("depth", color=color1)
+                        
+                    try:
+                        ax1.margins(y=0.5)
+                        if localPwrExpAvgVisible == True:
+                            ax1.plot(xAxisValues, pwrExpAvgPlotValues, marker= "o", color= color2, label="Exp Avg Power")
+                        if localPowerVisible == True:
+                            ax1.plot(xAxisValues, powerPlotValues, marker= "o", color= color4, label="Power")
+                        for label in ax1.get_xticklabels():
+                            label.set_rotation(30)
+                            label.set_ha('right')
+                        ax1.set_ylabel("power (nanowatts * m^2)", color=color4)
+                        ax1.tick_params(axis='y', which='both', labelcolor=color4)
+                        ax1.tick_params(axis='x', labelcolor=color1)
+                        ax1.set_yscale('log')
+                        ax1.legend(loc = 'upper left')
                     
-                    plt.title("Power and Absorbance vs. Depth")
+                    except:
+                        ax1.set_ylabel("Power Meter Absent", color=color4)
+
+                    if localAbsorbanceVisible == True:
+                        try:
+                            ax2 = ax1.twinx()
+                            ax2.margins(x=None, y=1.5)
+                            ax2.plot(xAxisValues, absorbancePlotValues, marker= "o", color= color3, label="Absorbance")
+                            ax2.set_ylabel("absorbance (nm/m)", labelpad=12, color=color3)
+                            ax2.tick_params(axis='y', labelcolor=color3)
+                            ax2.legend(loc = 'upper right')
+                            
+                        except:
+                            ax2.set_ylabel("Transmissometer Absent", color=color3)
+
+                    if localDepthVisible == True and not xAxisTypeLocal == "Depth":
+                        try:
+                            ax3 = ax1.twinx()
+                            ax3.margins(x=None, y=1.5)
+                            ax3.plot(timePlotValues, depthPlotValues, marker= "o", color= color5, label="Depth")
+                            ax3.set_ylabel("depth (m)", color=color5)
+                            ax3.tick_params(axis='y', labelcolor=color5)
+                            ax3.legend(loc = 'lower left')
+                            
+                        except:
+                            ax3.set_ylabel("CTD Absent", color=color5)
+                    
+                    if xAxisTypeLocal == "Time":
+                        plt.title("Power and Absorbance and Depth vs. Time")
+                    if xAxisTypeLocal == "Depth":
+                        plt.title("Power and Absorbance vs. Depth")
+                    #plt.figlegend()
                     figPower.savefig("PowerPlot.jpg")
                     figPower.tight_layout()
                     plt.close()
 
-                    powerPlot = open("PowerPlot.jpg", 'rb')
-                    powerPlotRead = powerPlot.read()
-                    powerPlotEncode = base64.encodebytes(powerPlotRead)
-                    qPlots.put("plot#raw#" + powerPlotEncode)
-                    print(powerPlotEncode)
-                    
+                    plot = open("PowerPlot.jpg", 'rb')
+                    plotRead = plot.read()
+                    plotEncode = base64.encodebytes(plotRead)
+                    qPlots.put(plotEncode)
+                   
                 except Exception as Exc:
                     print(Exc)
                     print("Raw Data Graph could not be generated.")
-               
-                #Exponential Average Data Plot
-                try:        
-                    figPower = plt.figure()
-                    figPower, ax1 = plt.subplots()
-
-                    color = "tab:green"
-                    ax1.set_xlabel("depth (m)", color=color)
-                    ax1.set_ylabel("power (nanowatts * m^2)", color=color)
-                    ax1.plot(depthValues, powerValues, marker= "o", color= color)
-                    ax1.tick_params(axis='y', labelcolor=color)
-
-                    ax2 = ax1.twinx()
-
-                    color = "tab:blue"
-                    ax2.set_ylabel("absorbance (nm/m)", color=color)
-                    ax2.plot(depthValues, absorbanceValues, marker= "o", color= color)
-                    ax2.tick_params(axis='y', labelcolor=color)
-                    
-                    plt.title("Absorbance and Average Power vs. Depth")
-                    figPower.savefig("ExpAvgPowerPlot.jpg")
-                    figPower.tight_layout()
-                    plt.close()
-
-                    expAvgPowerPlot = open("ExpAvgPowerPlot.jpg", 'rb')
-                    expAvgPowerPlotRead = expAvgPowerPlot.read()
-                    expAvgPowerPlotEncode = base64.encodebytes(expAvgPowerPlotRead)
-                    qPlots.put("plot#exp#" + expAvgPowerPlotEncode)
-                    print(powerPlotEncode)
-                     
-                except Exception as Exc:
-                    print(Exc)
-                    print("Graph could not be generated.")
                         
             except Exception as Exc:
                 print(Exc)
-                print("Killing While Loop Thread.")
-                return
+
             except KeyboardInterrupt:
                 print("Keyboard Interrupt")
                 return
@@ -484,11 +549,29 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print('new connection')
         clients.append(self)
     def on_message(self, message):
-        print(message)
-        MessageType = message[0:5]
-        if MessageType == "plen#":
+        MessageType = message[0:4]
+        if MessageType == "len#":
+            print("New Plot Length: " + message[4:])
+            plotLengthLock.acquire()
             global plotLength
-            plotLength = message[5:]
+            plotLength = message[4:]
+            plotLengthLock.release()
+        if MessageType == "vis#":
+            plotsString = message[4:]
+            print("Plot Change: " + plotsString)
+            visiblePlots = plotsString.split(", ")
+            global absorbanceVisible
+            absorbanceVisible = distutils.util.strtobool(visiblePlots[0])
+            global depthVisible
+            depthVisible = distutils.util.strtobool(visiblePlots[1])
+            global powerVisible
+            powerVisible = distutils.util.strtobool(visiblePlots[2])
+            global pwrExpAvgVisible
+            pwrExpAvgVisible = distutils.util.strtobool(visiblePlots[3])
+        if MessageType == "axs#":
+            axisTypeString = message[4:]
+            global xAxisType
+            xAxisType = axisTypeString
         
     def on_close(self):
         print('connection closed')

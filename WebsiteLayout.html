@@ -6,19 +6,84 @@
           background-color: #99ddff;
         }
         </style>
-        <h1>Oceanographic Sensor Monitor Website</h1>
+        <h1>Oceanographic Sensor Monitor</h1>
     </head>
     <body>
     <script>
-        var socket = new WebSocket("ws://raspberrypi:8888/ws");
+        <!-- The websocket address should be the external ip address -->
+        var socket = new WebSocket("ws://192.168.2.49:8888/ws");
         var lastPwrExpMovAvg = null;
         var weightConstant = 0.2;
+        var i = 0;
         
         function changePlotLength(){
             var plotLength = document.getElementById("newPlotLength").value;
             document.getElementById("newPlotLength").innerHTML = plotLength;
-            const plotLengthString = "plen#" + plotLength;
-            sendMessage(plotLengthString);
+            const plotLengthString = ("len#" + plotLength);
+            socketSendMessage(plotLengthString);
+        };
+
+        function changeAxis(){
+            var axisRadio = document.getElementsByName('xAxis');
+            for (var i = 0, length = axisRadio.length; i < length; i++){
+                if (axisRadio[i].checked){
+                    var xAxisType = axisRadio[i].value;
+                    break;
+                }
+            }
+            const xAxisTypeString = ("axs#" + xAxisType)
+            socketSendMessage(xAxisTypeString)
+        }
+        function applyPlots(){
+            var absorbPresent = "false";
+            var depthPresent = "false";
+            var powerPresent = "false";
+            var pwrExpAvgPresent = "false";
+            if (document.getElementById('absorbVisible').checked) {
+                var absorbPresent = "true";
+            }
+            if (document.getElementById('depthVisible').checked) {
+                var depthPresent = "true";
+            }
+            if (document.getElementById('powerVisible').checked) {
+                var powerPresent = "true";
+            }
+            if (document.getElementById('pwrExpAvgVisible').checked) {
+                var pwrExpAvgPresent = "true";
+            }
+            const visiblePlotString = ("vis#" + absorbPresent + ", " + depthPresent + ", " + powerPresent + ", " + pwrExpAvgPresent)
+            socketSendMessage(visiblePlotString);
+        };
+
+        function addRow(){
+            i++;
+            var inputData = document.getElementById('inputData').value;
+            var table = document.getElementById('dataRecord');
+            var row = table.insertRow();
+            var cell1 = row.insertCell(0);
+            var cell2 = row.insertCell(1);
+            var cell3 = row.insertCell(2);
+            var cell4 = row.insertCell(3);
+            var cell5 = row.insertCell(4);
+            var cell6 = row.insertCell(5);
+            var cell7 = row.insertCell(6);
+            cell1.innerHTML = i
+            cell2.innerHTML = inputData
+            cell3.innerHTML = window.time
+            cell4.innerHTML = window.absorb
+            cell5.innerHTML = window.depth
+            cell6.innerHTML = window.pwr
+            cell7.innerHTML = window.pwrExpAvg
+        }
+
+        function deleteRow(){
+            document.getElementById('dataRecord').deleteRow(-1);
+        }
+
+        function clearTable(){
+            var table = document.getElementById('dataRecord');
+            table.innerHTML = "";
+        }
         
         socket.onopen = function(){  
             console.log("connected"); 
@@ -29,12 +94,12 @@
             if (StringType == "data#"){
                 var Message = (message.data).slice(5);
                 var SplitMessage = (Message).split(", ");
-                console.log("receiving: " + message.data);
-                var time = SplitMessage[0];
-                var absorb = SplitMessage[1];
-                var depth = SplitMessage[2];
-                var pwr = SplitMessage[3];
-                var pwrExpAvg = SplitMessage[4];
+                console.log("receiving: " + (message.data));
+                time = SplitMessage[0];
+                absorb = SplitMessage[1];
+                depth = SplitMessage[2];
+                pwr = SplitMessage[3];
+                pwrExpAvg = SplitMessage[4];
                 document.getElementById("timePoint").innerHTML = 'Time: ' + time;
                 document.getElementById("absorbPoint").innerHTML = 'Absorbance: ' + absorb;
                 document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
@@ -42,31 +107,16 @@
                 document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpAvg;
             }
 
-            if (StringType == "plot#"){
-                var Message = (message.data).slice(5);
-                var PlotType = Message.slice(0,4);
-                if (PlotType == "raw#"){
-                    var plotImageData = Message.slice(4);
-                    var powerPlotPlace = document.getElementById('powerPlot');
-                    var base64Plot = 'data:image/jpg;base64,' + (plotImageData)
-                    var image = document.createElement('img');
-                    image.onload = function(){
-                        powerPlotPlace.innerHTML = '';
-                        powerPlotPlace.appendChild(this);
-                    }
-                    image.src = base64Plot;
+            else{
+                var plotImageData = (message.data);
+                var powerPlotPlace = document.getElementById('powerPlot');
+                var base64Plot = 'data:image/jpg;base64,' + (plotImageData)
+                var image = document.createElement('img');
+                image.onload = function(){
+                    powerPlotPlace.innerHTML = '';
+                    powerPlotPlace.appendChild(this);
                 }
-                if (PlotType == "exp#"){
-                    var plotImageData = Message.slice(4);
-                    var pwrExpAvgPlotPlace = document.getElementById('pwrExpAvgPlot');
-                    var base64Plot = 'data:image/jpg;base64,' + (plotImageData)
-                    var image = document.createElement('img');
-                    image.onload = function(){
-                        pwrExpAvgPlotPlace.innerHTML = '';
-                        pwrExpAvgPlotPlace.appendChild(this);
-                    }
-                    image.src = base64Plot;
-                }
+                image.src = base64Plot;
             }
         };
 
@@ -74,7 +124,8 @@
             console.log("disconnected"); 
         };
 
-        sendMessage = function(message){
+        socketSendMessage = function(message){
+            console.log("sending: " + message);
             socket.send(message);
         };
 
@@ -87,11 +138,45 @@
     <div id=pwrExpAvg></div>
 
     <div id=powerPlot padding=100px></div>
-    <div id=pwrExpAvgPlot padding=100px></div>
         
     <label for="newPlotLength">Change Plot Length:</label>
-    <input type="text" id="newPlotLength" value="default">
-    <button type="button" onclick="changePlotLength"> Change </button>
+    <input type="text" id="newPlotLength" value="100">
+    <button type="button" onclick="changePlotLength()"> Change </button>
+    
+    <p>Enter a number of data points to display. (Max Plot Length: 1000)<br>
+    Note: This is an imposed limit, it could be increased if neccesary.<br>
+    The data is kept in a 1D array, and for conservation of memory purposes,<br>
+    I have limited the array length to 1000.
+    When this is exceeded, the oldest values are dropped.</p>
+    
+    <p>Select which values to use for the x axis:</p>
+    <input type="radio" id="time" name="xAxis" value="Time" checked>
+    <label for="time">Time Values</label><br>
+    <input type="radio" id="depth" name="xAxis" value="Depth">
+    <label for="depth">Depth Values</label><br>
+    <button type="button" onclick="changeAxis()"> Change </button>
+
+    <p>Select which lines to display:</p>
+    <label for="absorbVisible">Absorbance</label>
+    <input type="checkbox" id="absorbVisible" name="absorbPresent" value="present" checked><br>
+    <label for="depthVisible">Depth</label>
+    <input type="checkbox" id="depthVisible" name="depthPresent" value="present" checked><br>
+    <label for="powerVisible">Power</label>
+    <input type="checkbox" id="powerVisible" name="powerPresent" value="present" checked><br>
+    <label for="pwrExpAvgVisible">Exp Avg Power</label>
+    <input type="checkbox" id="pwrExpAvgVisible" name="pwrExpAvgPresent" value="present" checked><br>
+
+    <button type="button" onclick="applyPlots()"> Apply </button>
+
+    <p>This is used to generate a table of data from specific measurement points.<br>
+    Enter a value, this will be assigned to the current data set when you click submit.<br>
+    Table will appear below. Reloading Page will clear table, but preserve graphs.</p>
+    <label for="inputData">Enter Data for Table:</label>
+    <input type="text" id="inputData">
+    <button type="button" onclick="addRow()"> Submit </button>
+    <table id="dataRecord"></table>
+    <button type="button" onclick="deleteRow()"> Delete Last Row </button>
+    <button type="button" onclick="clearTable()"> Clear Table </button>
 
     </body>
     

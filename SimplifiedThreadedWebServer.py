@@ -220,6 +220,7 @@ def PowerMeterConfig():
         dev.reset()
 
         print('Initializing PM100... ', end='')
+        global instr
         instr =  usbtmc.Instrument(4883, 32891)
         global PowerMeter
         PowerMeter = ThorlabsPM100(inst=instr)
@@ -247,6 +248,7 @@ class PMThread(threading.Thread):
         self.name = name
         
     def run(self):
+        print("started pm thread")
         while True:
             RawTime = time.time()
             LongTime = time.ctime(float(RawTime))
@@ -688,20 +690,15 @@ if __name__ == '__main__':
 
     PMInitBreak.set()
 
-    XMissThrd = XMissThread()
-    CTDThrd = CTDThread()
-    PMThrd = PMThread()
-
-    XMissThrd.start()
-    CTDThrd.start()
+    XMissThread().start()
+    CTDThread().start()
     if PMAbsent == False:
-        PMThrd.start()
+        PMThread().start()
 
     VoltageThread().start()
 
     ConsumerWhileLoop().start()
     
-    PlottingThread().start()
     if PlottingOff == False:
         PlottingThread().start()
 

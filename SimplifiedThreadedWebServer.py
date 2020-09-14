@@ -82,6 +82,11 @@ def csvWrite(FileName,DataLine,EditMethod): #Ex. csvWrite("Data.csv",(Time,Dista
         file.flush()
         os.fsync(file)
 
+#I don't know the commands to change the system date and time.
+#If someone could add that, the HTML/JavaScript framework is in place.
+def changeClockTime(newClockTime):
+    ###!!! FIX ME !!!###
+    newSysClockTime = newClockTime
 now = datetime.now()
 Date = now.strftime("%Y%m%d-%H%M_")
 
@@ -609,6 +614,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             global PMWavelength
             PMWavelength = newPMWavelength
             ZeroPowerMeter(PMWavelength)
+        if MessageType == "clk#":
+            newClockTime = message[4:]
+            print("New Date/Time for System Clock: " + message[4:])
+            changeClockTime(newClockTime)
         global breakIndicator
         if breakIndicator == True:
             return

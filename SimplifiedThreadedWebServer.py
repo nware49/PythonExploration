@@ -314,7 +314,7 @@ class ConsumerWhileLoop(threading.Thread):
         while True:
             XMissTimeout = True
             CTDTimeout = True
-            PwrMTimeout = True
+            PMTimeout = True
 
             global breakIndicator
             if breakIndicator == True:
@@ -360,7 +360,7 @@ class ConsumerWhileLoop(threading.Thread):
                 while not qPwrM.empty():
                     countPM += 1
                     DataPwrM = qPwrM.get()
-                    PwrMTimeout = False
+                    PMTimeout = False
                     TimeStampPwrM,Power,FormPwrMTime = DataPwrM.split(",")
                     FormPower = '{:.2e}'.format(float(Power))
                     avgPM = float(avgPM) + float(FormPower)
@@ -379,16 +379,16 @@ class ConsumerWhileLoop(threading.Thread):
                 if CTDTimeout == True:
                     ShortCTDInterp = "NaN"
                     ShortTempInterp = "NaN"
-                if PwrMTimeout == True:
+                if PMTimeout == True:
                     ShortPMInterp = "NaN"
                     pwrExpAvg = "NaN"
                 
-                OutgoingData = ("data#" + str(StrfTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
+                OutgoingData = ("data#" + str(TimeBase) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
                 qWebSock.put(OutgoingData)
 
                 csvWrite(AllDataFile,(TimeBase,ShortXMissInterp,ShortCTDInterp,ShortTempInterp,ShortPMInterp,pwrExpAvg),"a")
              
-                OutgoingPlotData = (str(TimeBase) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg)
+                OutgoingPlotData = (str(TimeBase) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
                 qPlotsData.put(OutgoingPlotData)
              
                 nextTime += 2

@@ -38,6 +38,8 @@ import asyncio
 
 from ads1015 import ADS1015
 
+PlottingOff = True
+
 PMInitBreak = Event()
 
 XMissAbsent = False
@@ -415,9 +417,12 @@ class ConsumerWhileLoop(threading.Thread):
                 
                 OutgoingData = ("data#" + str(FormatTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
                 qWebSock.put(OutgoingData)
+
+                global PlottingOff
+                if PlottingOff == False:
+                    OutgoingPlotData = (str(LongTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
+                    qPlotsData.put(OutgoingPlotData)
              
-                OutgoingPlotData = (str(LongTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
-                qPlotsData.put(OutgoingPlotData)
              
                 nextTime += 2
                 time.sleep(max(0, nextTime - time.time()))
@@ -690,6 +695,8 @@ if __name__ == '__main__':
     ConsumerWhileLoop().start()
     
     PlottingThread().start()
+    if PlottingOff == False:
+        PlottingThread().start()
 
     WebSocketHost().start()
 

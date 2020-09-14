@@ -42,6 +42,12 @@
             socketSendMessage(wavelengthString);
         }
 
+        function changeClockTime(){
+            var newTimeDate = document.getElementById("newClockTime").value;
+            document.getElementById("newClocktTime").innerHTML = newTimeDate;
+            const TimeDateString = ("clk#" + newTimeDate)
+            socketSendMessage(TimeDateString);
+        }
         function applyPlots(){
             var absorbPresent = "false";
             var depthPresent = "false";
@@ -174,6 +180,12 @@
     <input type="text" id="newPMWavelength" value="405">
     <button type="button" onclick="zeroPowerMeter()"> Zero PM </button><br>
 
+    <p>Enter a new date and time for the system clock. The format is:<br>
+    Month,Day,Hour(24Hr),Minute(ZeroPadded),Second(ZeroPadded),Year(Full)<br>
+    For example, for 1:05:08 PM, September 04, 2020, it would be 09041305082020</p>
+    <label for="newClockTime">Change System Clock Time/Date:</label>
+    <input type="text" id="newClockTime">
+    <button type="button" onclick="changeClockTime()"> Change </button><br>
     
     <p>Select which values to use for the x axis:</p>
     <input type="radio" id="time" name="xAxis" value="Time" checked>

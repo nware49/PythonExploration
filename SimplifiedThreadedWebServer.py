@@ -66,6 +66,7 @@ powerVisible = True
 pwrExpAvgVisible = True
 xAxisTypeLock = threading.Lock()
 xAxisType = "Time"
+PMWavelength = 405
 
 weightConstant = 0.2
 
@@ -257,6 +258,18 @@ class PMThread(threading.Thread):
                 time.sleep(0.1)
                 continue
         return
+
+def ZeroPowerMeter(PMWavelength):
+    dev = finddev(idVendor=0x1313, idProduct=0x807b)
+    dev.reset()
+    global instr
+    instr =  usbtmc.Instrument(4883, 32891)
+    global PowerMeter
+    PowerMeter = ThorlabsPM100(inst=instr)
+    PowerMeter.sense.correction.wavelength = int(PMWavelength)
+    PowerMeter.sense.correction.collect.zero.initiate()
+    while PowerMeter.sense.correction.collect.zero.state:
+            time.sleep(0.5)
 
 breakIndicator = False
 
@@ -591,6 +604,11 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             axisTypeString = message[4:]
             global xAxisType
             xAxisType = axisTypeString
+        if MessageType == "zpm#":
+            newPMWavelength = message[4:]
+            global PMWavelength
+            PMWavelength = newPMWavelength
+            ZeroPowerMeter(PMWavelength)
         global breakIndicator
         if breakIndicator == True:
             return

@@ -34,6 +34,14 @@
             const xAxisTypeString = ("axs#" + xAxisType)
             socketSendMessage(xAxisTypeString)
         }
+
+        function zeroPowerMeter(){
+            var newWavelength = document.getElementById("newPMWavelength").value;
+            document.getElementById("newPMWavelength").innerHTML = PMWavelength;
+            const wavelengthString = ("zpm#" + newWavelength)
+            socketSendMessage(wavelengthString);
+        }
+
         function applyPlots(){
             var absorbPresent = "false";
             var depthPresent = "false";
@@ -148,6 +156,13 @@
     The data is kept in a 1D array, and for conservation of memory purposes,<br>
     I have limited the array length to 1000.
     When this is exceeded, the oldest values are dropped.</p>
+    <p>Enter a new wavelength for the Power Meter. Defaults to 405.<br>
+    Cover the Power Meter and click the button below to zero the Power Meter.<br>
+    You will need to wait approximately 5 seconds before removing the cover.<br></p>
+    <label for="newPMWavelength">Change PM Wavelength:</label>
+    <input type="text" id="newPMWavelength" value="405">
+    <button type="button" onclick="zeroPowerMeter()"> Zero PM </button><br>
+
     
     <p>Select which values to use for the x axis:</p>
     <input type="radio" id="time" name="xAxis" value="Time" checked>

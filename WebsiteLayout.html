@@ -113,6 +113,17 @@
                 document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
                 document.getElementById("pwrPoint").innerHTML = 'Power: ' + pwr;
                 document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpAvg;
+            if (StringType == "volt#"){
+                var Message = (message.data).slice(5);
+                var SplitMessage = (Message).split(", ");
+                bat1 = SplitMessage[0];
+                bat2 = SplitMessage[1];
+                v12 = SplitMessage[2];
+                v5 = SplitMessage[3];
+                document.getElementById("bat1voltage").innerHTML = 'Battery 1 Voltage: ' + bat1;
+                document.getElementById("bat2voltage").innerHTML = 'Battery 2 Voltage: ' + bat2;
+                document.getElementById("voltage12v").innerHTML = '12V Voltage: ' + v12;
+                document.getElementById("voltage5v").innerHTML = '5V Voltage: ' + v5;
             }
 
             else{
@@ -182,6 +193,13 @@
     <input type="checkbox" id="pwrExpAvgVisible" name="pwrExpAvgPresent" value="present" checked><br>
 
     <button type="button" onclick="applyPlots()"> Apply </button>
+
+    <br><br>
+
+    <div id=bat1voltage></div>
+    <div id=bat2voltage></div>
+    <div id=voltage12v></div>
+    <div id=voltage5v></div>
 
     <p>This is used to generate a table of data from specific measurement points.<br>
     Enter a value, this will be assigned to the current data set when you click submit.<br>

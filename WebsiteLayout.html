@@ -48,6 +48,7 @@
             const TimeDateString = ("clk#" + newTimeDate)
             socketSendMessage(TimeDateString);
         }
+
         function applyPlots(){
             var absorbPresent = "false";
             var depthPresent = "false";
@@ -114,11 +115,15 @@
                 depth = SplitMessage[2];
                 pwr = SplitMessage[3];
                 pwrExpAvg = SplitMessage[4];
+                dataSet = SplitMessage[5];
                 document.getElementById("timePoint").innerHTML = 'Time: ' + time;
                 document.getElementById("absorbPoint").innerHTML = 'Absorbance: ' + absorb;
                 document.getElementById("depthPoint").innerHTML = 'Depth: ' + depth;
                 document.getElementById("pwrPoint").innerHTML = 'Power: ' + pwr;
                 document.getElementById("pwrExpAvg").innerHTML = 'Power Exp Avg: ' + pwrExpAvg;
+                document.getElementById("dataSetNumber").innerHTML = 'Data Set Number: ' + dataSet
+            }
+
             if (StringType == "volt#"){
                 var Message = (message.data).slice(5);
                 var SplitMessage = (Message).split(", ");
@@ -131,6 +136,7 @@
                 document.getElementById("voltage12v").innerHTML = '12V Voltage: ' + v12;
                 document.getElementById("voltage5v").innerHTML = '5V Voltage: ' + v5;
             }
+
 
             else{
                 var plotImageData = (message.data);
@@ -155,24 +161,27 @@
         };
 
       </script>
-    
+
     <div id=timePoint></div>
     <div id=absorbPoint></div>
     <div id=depthPoint></div>
     <div id=pwrPoint></div>
     <div id=pwrExpAvg></div>
+    <div id=dataSetNumber></div>
+
+    <p>Compare this value to the one in the title of the chart.<br>
+    This will show how far the chart is behind the rest of the program.</p>
 
     <div id=powerPlot></div>
         
     <label for="newPlotLength">Change Plot Length:</label>
     <input type="text" id="newPlotLength" value="100">
     <button type="button" onclick="changePlotLength()"> Change </button>
-    
     <p>Enter a number of data points to display. (Max Plot Length: 1000)<br>
     Note: This is an imposed limit, it could be increased if neccesary.<br>
     The data is kept in a 1D array, and for conservation of memory purposes,<br>
-    I have limited the array length to 1000.
-    When this is exceeded, the oldest values are dropped.</p>
+    the array length is limited to 1000. When this is exceeded, the oldest values are dropped.</p>
+
     <p>Enter a new wavelength for the Power Meter. Defaults to 405.<br>
     Cover the Power Meter and click the button below to zero the Power Meter.<br>
     You will need to wait approximately 5 seconds before removing the cover.<br></p>
@@ -187,7 +196,7 @@
     <input type="text" id="newClockTime">
     <button type="button" onclick="changeClockTime()"> Change </button><br>
     
-    <p>Select which values to use for the x axis:</p>
+    <p>Select which values to use for the x-axis:</p>
     <input type="radio" id="time" name="xAxis" value="Time" checked>
     <label for="time">Time Values</label><br>
     <input type="radio" id="depth" name="xAxis" value="Depth">
@@ -203,7 +212,6 @@
     <input type="checkbox" id="powerVisible" name="powerPresent" value="present" checked><br>
     <label for="pwrExpAvgVisible">Exp Avg Power</label>
     <input type="checkbox" id="pwrExpAvgVisible" name="pwrExpAvgPresent" value="present" checked><br>
-
     <button type="button" onclick="applyPlots()"> Apply </button>
 
     <br><br>

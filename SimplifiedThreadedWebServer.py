@@ -335,6 +335,7 @@ class ConsumerWhileLoop(threading.Thread):
     def run(self):
         #Consumer While Loop
         nextTime = time.time()
+        loopCount = 0
         while True:
             XMissTimeout = True
             CTDTimeout = True
@@ -415,7 +416,10 @@ class ConsumerWhileLoop(threading.Thread):
 
                 csvWrite(AllDataFile,(LongTime,FormatTime,ShortXMissInterp,ShortCTDInterp,ShortTempInterp,ShortPMInterp,pwrExpAvg),"a")
                 
-                OutgoingData = ("data#" + str(FormatTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
+
+                loopCount += 1
+
+                OutgoingData = ("data#" + str(FormatTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg) + ", " + str(loopCount))
                 qWebSock.put(OutgoingData)
 
                 global PlottingOff
@@ -449,6 +453,7 @@ class PlottingThread(threading.Thread):
         depthValues = []
         powerValues = []
         pwrExpAvgValues = []
+        loopCount = 0
         while True:
             global breakIndicator
             if breakIndicator == True:
@@ -550,10 +555,12 @@ class PlottingThread(threading.Thread):
                     except:
                         ax3.set_ylabel("CTD Absent", color=color5)
 
+                loopCount += 1
+
                 if xAxisTypeLocal == "Time":
-                    plt.title("Power and Absorbance and Depth vs. Time")
+                    plt.title("Power and Absorbance and Depth vs. Time - " + str(loopCount))
                 if xAxisTypeLocal == "Depth":
-                    plt.title("Power and Absorbance vs. Depth")
+                    plt.title("Power and Absorbance vs. Depth - " + str(loopCount))
                 #plt.figlegend()
                 figPower.savefig("PowerPlot.jpg")
                 figPower.tight_layout()

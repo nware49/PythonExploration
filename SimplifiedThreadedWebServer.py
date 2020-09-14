@@ -89,6 +89,7 @@ def csvWrite(FileName,DataLine,EditMethod): #Ex. csvWrite("Data.csv",(Time,Dista
 def changeClockTime(newClockTime):
     ###!!! FIX ME !!!###
     newSysClockTime = newClockTime
+
 now = datetime.now()
 Date = now.strftime("%Y%m%d-%H%M_")
 
@@ -417,7 +418,6 @@ class ConsumerWhileLoop(threading.Thread):
                     pwrExpAvg = "NaN"
 
                 csvWrite(AllDataFile,(LongTime,FormatTime,ShortXMissInterp,ShortCTDInterp,ShortTempInterp,ShortPMInterp,pwrExpAvg),"a")
-                
 
                 loopCount += 1
 
@@ -428,7 +428,6 @@ class ConsumerWhileLoop(threading.Thread):
                 if PlottingOff == False:
                     OutgoingPlotData = (str(LongTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
                     qPlotsData.put(OutgoingPlotData)
-             
              
                 nextTime += 2
                 time.sleep(max(0, nextTime - time.time()))
@@ -687,7 +686,6 @@ if __name__ == '__main__':
     PowerMeterInit = Thread(target=PowerMeterConfig)
     PowerMeterInit.start()
     PowerMeterInit.join(timeout=5)
-
     PMInitBreak.set()
 
     XMissThread().start()
@@ -698,7 +696,7 @@ if __name__ == '__main__':
     VoltageThread().start()
 
     ConsumerWhileLoop().start()
-    
+
     if PlottingOff == False:
         PlottingThread().start()
 

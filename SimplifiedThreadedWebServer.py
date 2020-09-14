@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os,sys
 import time
 import random
 import serial
@@ -77,6 +78,8 @@ def csvWrite(FileName,DataLine,EditMethod): #Ex. csvWrite("Data.csv",(Time,Dista
     with open(FileName,EditMethod) as file: 
         writer = csv.writer(file, delimiter=",")
         writer.writerow(DataLine)
+        file.flush()
+        os.fsync(file)
 
 now = datetime.now()
 Date = now.strftime("%Y%m%d-%H%M_")
@@ -92,7 +95,7 @@ AllDataFile = str(Date) + "AllDataFile.csv"
 VoltageLog = str(Date) + "VoltageLog.csv"
 
 csvWrite(AllDataFile,("# Time","Absorbance Avg","Depth Avg","Temperature Avg","Power Avg","Exp Avg Power"),"a")
-#csvWrite(VoltageLog,("# Time","Battery 1 Voltage","Battery 2 Voltage","12V Output Voltage","5V Output Voltage"), "a")
+csvWrite(VoltageLog,("# Time","Battery 1 Voltage","Battery 2 Voltage","12V Output Voltage","5V Output Voltage"), "a")
 
 try:
     Serial1 = serial.Serial(PortChannel1)
@@ -132,6 +135,7 @@ class XMissThread(threading.Thread):
                 Name,XMiss1,XMiss2,XMiss3,Absorbance,Wavelength,TimeStamp = StringValues.split(" ")
                 qXMiss.put(TimeStamp + "," + Absorbance + "," + FormatTime)
                 csvWrite(XMissDataFile,(FormatTime,Absorbance),"a")
+                time.sleep(0.1)
             except:
                 print("Could not retrieve data from XMiss.")
                 time.sleep(0.1)
@@ -158,7 +162,6 @@ try:
     #Formatting CSV Files for CTD if it is present.
     csvWrite(CTDDataFile,("# CTD Sample Time","Time Since Started CTD","Depth","Temperature"),"a")
     #csvWrite(CTDInterpFile,("# Time Base Sample Time","CTD Sample Time","Depth","CTD Interpolation","Temperature"),"a")
-    
 except Exception as Exc:
     print(Exc)
     CTDAbsent = True
@@ -195,7 +198,8 @@ class CTDThread(threading.Thread):
                 HashTemperature,Depth,CTDDate,CTDTime,TimeStamp = StringValues.split(", ")
                 Temperature = HashTemperature[-len(HashTemperature)+2:-1]
                 qCTD.put(TimeStamp + "," + Temperature + "," + Depth + "," + FormatTime)
-                csvWrite(CTDDataFile,(FormatTime,CTDTime,Depth,Temperature),"a") 
+                csvWrite(CTDDataFile,(FormatTime,CTDTime,Depth,Temperature),"a")
+                time.sleep(0.1)
             except Exception as Exc:
                 print("Could not retrieve data from CTD.")
                 time.sleep(0.1)
@@ -249,9 +253,9 @@ class PMThread(threading.Thread):
                 csvWrite(PMDataFile,(FormatTime,Power),"a")
                 time.sleep(1)
             except Exception as Exc:
-                print("Could not retrieve data from Power Meter. Killing PM thread.")
+                print("Could not retrieve data from Power Meter.")
                 time.sleep(0.1)
-                return
+                continue
         return
 
 breakIndicator = False
@@ -292,7 +296,7 @@ class VoltageThread(threading.Thread):
                 OutgoingVoltages = ("volt#" + str(battery1Voltage) + ", " + str(battery2Voltage) + ", " + str(voltage12v) + ", " + str(voltage5v))
                 qVoltages.put(OutgoingVoltages)
                 
-                #csvWrite(VoltageLog,(TimeStamp,battery1Voltage,battery2Voltage,voltage12v,voltage5v),"a")
+                csvWrite(VoltageLog,(TimeStamp,battery1Voltage,battery2Voltage,voltage12v,voltage5v),"a")
                 
                 time.sleep(10)
 
@@ -322,10 +326,12 @@ class ConsumerWhileLoop(threading.Thread):
 
             try:
                 TimeBase = time.time()
+                LongTime = time.ctime(float(TimeBase))
+                NormalTime = LongTime[11:19]
+                FormatTime = (LongTime[11:19] + "." + str(TimeBase)[12:13])
                 
                 if qXMiss.empty() and qCTD.empty() and qPwrM.empty():
-                    time.sleep(0.125)
-                    print("Queues are empty.")
+                    time.sleep(0.1)
                     continue
 
                 avgXMiss = 0
@@ -337,7 +343,8 @@ class ConsumerWhileLoop(threading.Thread):
                     TimeStampXMiss,Absorbance,FormXMissTime = DataXMiss.split(",")
                     avgXMiss = float(avgXMiss) + float(Absorbance)
                 if XMissTimeout == False:
-                    ShortXMissInterp = avgXMiss / countXMiss
+                    XMissInterp = float(avgXMiss) / float(countXMiss)
+                    ShortXMissInterp = round(XMissInterp, 4)
 
                 avgDepth = 0
                 countDepth = 0
@@ -349,11 +356,13 @@ class ConsumerWhileLoop(threading.Thread):
                     DataCTD = qCTD.get()
                     CTDTimeout = False
                     TimeStampCTD,Temperature,Depth,FormCTDTime = DataCTD.split(",")
-                    avgCTD = float(avgDepth) + float(Depth)
+                    avgDepth = float(avgDepth) + float(Depth)
                     avgTemp = float(avgTemp) + float(Temperature)
                 if CTDTimeout == False:
-                    ShortCTDInterp = avgDepth / countDepth
-                    ShortTempInterp = avgTemp / countTemp
+                    CTDInterp = float(avgDepth) / float(countDepth)
+                    TempInterp = float(avgTemp) / float(countTemp)
+                    ShortCTDInterp = round(CTDInterp, 4)
+                    ShortTempInterp = round(TempInterp, 4)
 
                 avgPM = 0
                 countPM = 0
@@ -365,7 +374,8 @@ class ConsumerWhileLoop(threading.Thread):
                     FormPower = '{:.2e}'.format(float(Power))
                     avgPM = float(avgPM) + float(FormPower)
                 if PMTimeout == False:
-                    ShortPMInterp = avgPM / countPM
+                    PMInterp = float(avgPM) / float(countPM)
+                    ShortPMInterp = '{:.2e}'.format(PMInterp)
                     try:
                         global weightConstant
                         pwrExpAvg = '{:.2e}'.format(weightConstant * ShortPMInterp + (1 - weightConstant) * float(lastPwrExpAvg))
@@ -382,13 +392,13 @@ class ConsumerWhileLoop(threading.Thread):
                 if PMTimeout == True:
                     ShortPMInterp = "NaN"
                     pwrExpAvg = "NaN"
-                
-                OutgoingData = ("data#" + str(TimeBase) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
-                qWebSock.put(OutgoingData)
 
-                csvWrite(AllDataFile,(TimeBase,ShortXMissInterp,ShortCTDInterp,ShortTempInterp,ShortPMInterp,pwrExpAvg),"a")
+                csvWrite(AllDataFile,(LongTime,FormatTime,ShortXMissInterp,ShortCTDInterp,ShortTempInterp,ShortPMInterp,pwrExpAvg),"a")
+                
+                OutgoingData = ("data#" + str(FormatTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
+                qWebSock.put(OutgoingData)
              
-                OutgoingPlotData = (str(TimeBase) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
+                OutgoingPlotData = (str(LongTime) + ", " + str(ShortXMissInterp) + ", " + str(ShortCTDInterp) + ", " + str(ShortPMInterp) + ", " + str(pwrExpAvg))
                 qPlotsData.put(OutgoingPlotData)
              
                 nextTime += 2
@@ -422,14 +432,15 @@ class PlottingThread(threading.Thread):
                 return
                                     
             if qPlotsData.empty():
-                time.sleep(0.125)
+                time.sleep(0.1)
                 continue
 
             try:
                 if not qPlotsData.empty():
                     plotDataString = qPlotsData.get()
                     TimeStamp,AbsorbAvg,DepthAvg,PowerAvg,ExpAvgPower = plotDataString.split(", ")
-                    timeValues.append(TimeStamp)
+                    StrpTime = datetime.strptime(TimeStamp, "%a %b %d %H:%M:%S %Y")
+                    timeValues.append(StrpTime)
                     absorbanceValues.append(float(AbsorbAvg))
                     depthValues.append(float(DepthAvg))
                     powerValues.append(float(PowerAvg))
@@ -561,14 +572,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
         MessageType = message[0:4]
         if MessageType == "len#":
-            print("New Plot Length: " + message[4:])
-            plotLengthLock.acquire()
+            #print("New Plot Length: " + message[4:])
             global plotLength
             plotLength = message[4:]
-            plotLengthLock.release()
         if MessageType == "vis#":
             plotsString = message[4:]
-            print("Plot Change: " + plotsString)
+            #print("Plot Change: " + plotsString)
             visiblePlots = plotsString.split(", ")
             global absorbanceVisible
             absorbanceVisible = distutils.util.strtobool(visiblePlots[0])
@@ -628,7 +637,7 @@ class WebSocketHost(threading.Thread):
         httpServer.listen(options.port)
         print("Listening on port:" + str(options.port))        
         webSocketLoop = tornado.ioloop.IOLoop.current()
-        callbackScheduler = tornado.ioloop.PeriodicCallback(PushToClients,100)
+        callbackScheduler = tornado.ioloop.PeriodicCallback(PushToClients,200)
         callbackScheduler.start()
         webSocketLoop.start()
             
